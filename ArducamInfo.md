@@ -8,28 +8,28 @@ There are three main interfaces published by Arducam. Note that the Python demos
 
 1. (The original SDK)[https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield]: fully self-contained, except for  for Linux.
     Contains demos for C/C++ and Python, for Windows, Linux, RaspberryPi, Nvidia Jetson
-    1. Configuration files for various sheild/camera combinations
-    1. Drivers for Windows, also available from its Releases section
-    1. Linux only needs  standard USB libraries (libusb) and setting udev rules to allow regular user run without *sudo*
-    1. Demos for Windows include a GUI tool to open the camera using configuration file and do image capture, as well as possibility to view/change camera registers
-    2. The SDK includes binaries for Python 2.7 (not versioned), as well as for Python 3.6-3.8. However, the demos are fully compatible with the Python dependencies in the "split" demo.
+    * Configuration files for various sheild/camera combinations
+    * Drivers for Windows, also available from its Releases section
+    * Linux only needs  standard USB libraries (libusb) and setting udev rules to allow regular user run without *sudo*
+    * Demos for Windows include a GUI tool to open the camera using configuration file and do image capture, as well as possibility to view/change camera registers
+    * The SDK includes binaries for Python 2.7 (not versioned), as well as for Python 3.6-3.8. However, the demos are fully compatible with the Python dependencies in the "split" demo, which can be installed via `pip`.
        To run, you need to remove the ArducamSDK libraries and the config_parser. Otherwise, python will try to load these and fail.
-    4. The repo does **not** include the Linux dynamic library for *arducam_config_parser* (only the Python wrapper), but that can be obtained from [its own repo](https://github.com/ArduCAM/arducam_config_parser) **NOTE** that this is only an early version, not supporting all features (e.g. Controls); it is incompatible with the parser used by demo. Only the Windows version contains the corresponding library.
-    5. The SDK User Guide (API documentation) is available online as PDF (see below), but is incomplete.
-    6. **Not all functions of the SDK are documented,**. For example, `ArducamSDK.Py_ArduCam_readReg_8_8()` is used in the demo, but is not present in the published documentation.
+    * The repo does **not** include the Linux dynamic library for *arducam_config_parser* (only the Python wrapper), but that can be obtained from [its own repo](https://github.com/ArduCAM/arducam_config_parser) **NOTE** that this is only an early version, not supporting all features (e.g. Controls); it is incompatible with the parser used by demo. Only the Windows version contains the corresponding library.
+    * The SDK User Guide (API documentation) is available online as PDF (see below), but is incomplete.
+    * **Not all functions of the SDK are documented,**. For example, `ArducamSDK.Py_ArduCam_readReg_8_8()` is used in the demo, but is not present in the published documentation.
 
 
 1. The "new" version, splits the CPP and Python demos into separate repos. 
-    1. [ArduCAM_USB_Camera_Shield_Cpp_Demo](https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield_Cpp_Demo); the SDK User Guide is [available online as PDF](https://blog.arducam.com/downloads/shields/USB_Shield/ArduCAM_USB_Camera_SDK_Guide_V1.3.pdf)
-    1. [ArduCAM_USB_Camera_Shield_Python_Demo](https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield_Python_Demo); the SDK User Guide is [available online as PDF](https://blog.arducam.com/downloads/shields/USB_Shield/ArduCAM_USB_Camera_Python_SDK_Guide_V1.3.pdf)
-    1. Drivers are to be downloaded from Releases of the original SDK
-    2. The demo uses the same SDK as v1, but it has object oriented structure (`class ArducamCamera`, wrapped around the same API; its methods contain some of the boilerplate functions from the original demo).
-    1. Config files are not provided, but there is a separate github repo (mostly identical with the original), [ArduCAM_USB_Camera_Shield_Config](https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield_Config)
-    1. Python dependencies are to be installed via *pip*, from [PyPI](pypi.org)
+    * [ArduCAM_USB_Camera_Shield_Cpp_Demo](https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield_Cpp_Demo); the SDK User Guide is [available online as PDF](https://blog.arducam.com/downloads/shields/USB_Shield/ArduCAM_USB_Camera_SDK_Guide_V1.3.pdf)
+    * [ArduCAM_USB_Camera_Shield_Python_Demo](https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield_Python_Demo); the SDK User Guide is [available online as PDF](https://blog.arducam.com/downloads/shields/USB_Shield/ArduCAM_USB_Camera_Python_SDK_Guide_V1.3.pdf)
+    * Drivers are to be downloaded from Releases of the original SDK
+    * The demo uses the same SDK as v1, but it has object oriented structure (`class ArducamCamera`, wrapped around the same API; its methods contain some of the boilerplate functions from the original demo).
+    * Config files are not provided, but there is a separate github repo (mostly identical with the original), [ArduCAM_USB_Camera_Shield_Config](https://github.com/ArduCAM/ArduCAM_USB_Camera_Shield_Config)
+    * Python dependencies are to be installed via *pip*, from [PyPI](pypi.org)
         > python3 -m pip install arducam_config_parser ArducamSDK
         - [arducam_config_parser](https://pypi.org/project/arducam-config-parser/#files) has single wheel for all Python versions, wraps around *so* library
         - [ArducamSDK](https://pypi.org/project/ArducamSDK/#files) has wheels for Python versions 2.7, 3.5-3.12; wraps around the *.so* library.
-    1. CPP dependencies are to be installed via apt as *.deb* files from the Arducam repo, but these are stored at [Arducam PPA on Guthub](https://github.com/ArduCAM/arducam_ppa) along with other related binaries.
+    * CPP dependencies are to be installed via apt as *.deb* files from the Arducam repo, but these are stored at [Arducam PPA on Guthub](https://github.com/ArduCAM/arducam_ppa) along with other related binaries.
         * *arducam_config_parser-dev*
         * *arducam-usb-sdk-dev*
 
@@ -89,15 +89,27 @@ On Linux,Due to permission restrictions (the new device is owned by *root*), the
     3. When thread ends, call `endCaptureImage()`
 	
 2. Start a ***read image thread***
-    1. Check if an image is available
-    2. Read the image as soon as it becomes available and process it
+    1. Check if an image is available, `imageAvailable()` (returns number of images in camera buffer)
+    2. Read the image (`readImage()`) as soon as it becomes available and process it
+    3. Delete image from camera buffer to make room for next capture
 	
 3. The threads will end when a control variable is set.
 
-**NOTES:** 
-5. The threaded approach is not the only approach. It is also OK to check and read the image after a successful capture in the same (main) thread.
+## Non-threaded approach:
+The threaded approach is not the only approach. It is also OK to check and read the image after a successful capture in the same (main) thread. This approach is useful if a single image needs to be captured for diagnostics. 
+
+1. Call `beginCaptureImage()`
+
+2. In a continuous loop,
+    1. Call `captureImage()`
+    2. Check if image is available, and read it if it is (and delete from buffer).
+
+3. Call `endCapture` when done
+
+**NOTES:**
+
 6. In documentation, error code 0 is marked as "no error". In practice, all actual error codes are above 0xFF00. Sample code marks `rtn_val > 255` as errors. I found that `1` is usually returned as return value by `captureImage()`.
-2. An image may still be captured for some error codes (e.g., `USB_CAMERA_FRAME_INDEX_ERROR`, code `0xFF25`), although the image may be corrupt.
+2. An image may still be captured for some error codes (e.g., `USB_CAMERA_FRAME_INDEX_ERROR`, code `0xFF25`), although the image may be corrupt. Unless the image is needed for diagnostics, it should be deleted.
 3. It is normal to have some errors at the beginning (e.g., `USB_CAMERA_DATA_LEN_ERROR`, code `0xFF24`). This usually vanishes as parameters take effect (in
 4. If there is a delay (in my experiment, between 0.01 and 0.1 seconds), the next capture may end with error.
 
@@ -108,7 +120,7 @@ On Linux,Due to permission restrictions (the new device is owned by *root*), the
 In the Arducam SDK, it means a data transmission mismatch or dropped frame has occurred. This happens when the host fails to process incoming USB data in time, resolution/config settings do not match the hardware profile, or bandwidth is constrained.
 This is a transmission error. The data may be lost due to the failure to process the data output by the device in time.
 
-*Common Causes & Fixes*
+*Common Causes and Fixes*
  * USB Port Speed: Ensure your camera is plugged into a true USB 3.0 (or higher) port. Plugging a high-bandwidth USB 3.0 Arducam shield or kit into a USB 2.0 port frequently triggers length and timeout errors.
  * Mismatched Configuration: Verify that the .cfg or .json resolution and pixel clock configuration file matches your exact sensor model, lane count, and hardware revision. Do not manually alter width/height parameters inside code without updating the base config.
  * System Bottlenecks / CPU Load: Reduce the pixel clock frequency in your configuration file if your host processor (such as a Raspberry Pi) cannot handle the high data throughput rate.
@@ -136,10 +148,10 @@ This error means that the image frames are not continuous, and each image frame 
 ## Configuration file
 
 ### Image formats
-> FORMAT    = <value1>[, <value2>]
+> FORMAT    = &lt;value1&gt;[, &lt;value2&gt;]
 **FORMAT** sets the format of the image generated by the camera.
-* `<value 1>` is the main format, set in the configuration sent to camera when opening connection.
-* `<value 2>` is the subtype, used internally to decode the raw data into color image. Used only by raw-like color formats to specify channel ordering, and passed only to processing decoder. Monochrome formats do not use it.
+* `&lt;value 1&gt;` is the main format, set in the configuration sent to camera when opening connection.
+* `&lt;value 2&gt;` is the subtype, used internally to decode the raw data into color image. Used only by raw-like color formats to specify channel ordering, and passed only to processing decoder. Monochrome formats do not use it.
 
 Arducam st_raw typically refers to saving, capturing, or streaming sensor raw data (such as Bayer RAW formats) using Arducam's software development kits or example repositories (like their MIPI or SPI camera C/C++ libraries)
 
@@ -153,7 +165,7 @@ Arducam st_raw typically refers to saving, capturing, or streaming sensor raw da
 In Arducam configuration files and software SDKs, RAW and ST_RAW are distinct data format identifiers used to define how sensor pixel data is read, structured, and parsed by the host application or USB/MIPI camera shield.
 * *RAW*
     * **Definition**: Standard uncompressed Bayer or raw sensor data format.
-    * **Data Handling**: The pixel values are streamed directly from the sensor array with standard color gain parameters (Red, Green1, Green2, Blue) mapped traditionally.
+    * **Data Handling**: The pixel values are streamed directly from the sensor array with standard color gain parameters (Red, GreenR, GreenB, Blue) mapped traditionally. The same is valid for Monochrome images (separate gains for the four pixels in the square), although it doesn't make much sense to have different values in this case. 
     * **Use Case**: General computer vision, image processing, or saving standard unedited Bayer grid arrays for debayering on a host processor.
 * *ST_RAW*
     * **Definition**: "Software Trigger" or specialized stream-indexed raw format (FORMAT = 5) used in Arducam's proprietary USB/MIPI evaluation software and configuration profiles.
