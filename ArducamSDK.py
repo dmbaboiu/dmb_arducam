@@ -99,9 +99,18 @@ class ArduCamCfg(Structure):
                 ('emImageFmtMode', c_uint8),       # enum format_mode
                 ('u32TransLvl',    c_uint32),      # Uint32
                ]
+    
+    def __init__(camcfg, cfgdict=None):
+        if(cfgdict is None):
+            return
+        for att in cfgdict:
+            setattr(camcfg, att, cfgdict[att])
 
     def asdict(camcfg):
         return {i: getattr(camcfg, i) for i in dir(camcfg) if not i.startswith('_') and not callable(getattr(camcfg, i))}
+
+    def __getitem__(camcfg, key):
+        return getattr(camcfg, key)
 
 
 class ArduCamIndexinfo(Structure):
@@ -139,8 +148,26 @@ def Py_ArduCam_scan():
     """
     C prototype:
       unsigned int ArduCam_scan(ArduCamIndexinfo *pstUsbIdxArray);
+
+    Scan USB for available cameras.
+      unsigned int ArduCam_scan(ArduCamIndexinfo *pstUsbIdxArray);
+    Returns:
+      number of discovered cameras
+      list with their indices
+      list with their serial numbers (as bytes objects)
+    The number of cameras is redundant, as it is implicit in the length of the lists, but is provided for completness.
+    The original list for the C interface has a fixed length preallocated, with only camera_num populated (as in C),
+    but the returned lists only have the valid entries.
     """
-    return
+    scan = _libArduCam.ArduCam_scan
+    scan.argtypes = [POINTER(ArduCamIndexinfo * 16)]
+    scan.restype  = c_uint
+    pUsbIdxArray = (ArduCamIndexinfo * 16)()
+    camera_num  = scan(byref(pUsbIdxArray));
+    index_list  = [pUsbIdxArray[cam_idx].u8UsbIndex for cam_idx in range(camera_num)]
+    serial_list = [bytes(pUsbIdxArray[cam_idx].u8SerialNum) for cam_idx in range(camera_num)]
+    return camera_num, index_list, serial_list
+
 
 def Py_ArduCam_autoopen(cfg):
     """
