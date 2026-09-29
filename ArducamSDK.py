@@ -272,14 +272,38 @@ def Py_ArduCam_availableImage(handle):
     C prototype:
       unsigned int ArduCam_availableImage(ArduCamHandle useHandle);
     """
-    return
+    ardu_available = _libArduCam.ArduCam_availableImage
+    ardu_available.argtypes = [c_ulonglong]
+    ardu_available.restype  = c_uint
+    err_code = ardu_available(handle)
+    return err_code
 
 def Py_ArduCam_readImage(handle):
     """
     C prototype:
       unsigned int ArduCam_readImage(ArduCamHandle useHandle, ArduCamOutData* &pstFrameData);
+
+    The `* &` in the prototype is a C++ reference to a pointer. In the underlying C ABI used by `ctypes`,
+    a reference to a pointer behaves exactly like a pointer to a pointer (`ArducamOutData**`)
+    
+    The API does not mention any allocation/deallocation of data. I assume that the memory is fully allocated
+    by the underlying library, returns a handle to it, and deallocates it on close.
     """
-    return
+    ardu_read = _libArduCam.ArduCam_readImage
+    ardu_read.argtypes = [c_ulonglong, POINTER(POINTER(ArduCamOutData))]
+    ardu_read.restype  = c_uint
+    outData = POINTER(ArduCamOutData)()
+    err_code = ardu_read(handle, outData)
+    if outData:
+        cfg_dict = outData.contents.stImagePara.asdict()
+        cfg_dict['u64Time'] = outData.contents.u64Time
+        # `data` is to be converted to memoryview, for compatibility with standard interface and flexibility
+        pythonapi.PyMemoryView_FromMemory.argtypes = [c_char_p, c_ssize_t, c_int]
+        pythonapi.PyMemoryView_FromMemory.restype = py_object
+        data = pythonapi.PyMemoryView_FromMemory(cast(outData.contents.pu8ImageData, c_char_p), cfg_dict['u32Size'], 0x200)
+        return err_code, data, cfg_dict
+    else:
+        return None, None, None
 
 
 def Py_ArduCam_del(handle):
@@ -287,14 +311,22 @@ def Py_ArduCam_del(handle):
     C prototype:
       unsigned int ArduCam_del(ArduCamHandle useHandle);
     """
-    return
+    ardu_del = _libArduCam.ArduCam_del
+    ardu_del.argtypes = [c_ulonglong]
+    ardu_del.restype  = c_uint
+    err_code = ardu_del(handle)
+    return err_code
 
 def Py_ArduCam_flush(handle):
     """
     C prototype:
       unsigned int ArduCam_flush(ArduCamHandle useHandle);
     """
-    return
+    ardu_flush = _libArduCam.ArduCam_flush
+    ardu_flush.argtypes = [c_ulonglong]
+    ardu_flush.restype  = c_uint
+    err_code = ardu_flush(handle)
+    return err_code
 
 
 
