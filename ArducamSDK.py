@@ -560,15 +560,35 @@ def Py_ArduCam_readUserData(handle, u16Addr, u8Len):
     """
     C prototype:
       unsigned int ArduCam_readUserData(  ArduCamHandle useHandle, Uint16 u16Addr, Uint8 u8Len, Uint8* pu8Data );
+    
+    There are 1024 bytes for storing user defined data.
+    Address is in range 0-1023
+    Length <= 32
+    Address+length <= 1024 
     """
-    return
+    ardu_readUserData = _libArduCam.ArduCam_readUserData
+    ardu_readUserData.argtypes = [c_ulonglong, c_uint16, c_uint8, POINTER(c_uint8) ]
+    ardu_readUserData.restype  = c_uint
+    buf = (c_uint8 * u8Len)()
+    err_code = ardu_readUserData(handle, u16Addr, u8Len, buf)
+    return err_code, bytes(buf)
 
 def Py_ArduCam_writeUserData(handle, u16Addr, u8Len, data ):
     """
     C prototype:
       unsigned int ArduCam_writeUserData( ArduCamHandle useHandle, Uint16 u16Addr, Uint8 u8Len, Uint8* pu8Data );
+    
+    There are 1024 bytes for storing user defined data.
+    Address is in range 0-1023
+    Length <= 32
+    Address+length <= 1024 
     """
-    return
+    ardu_writeUserData = _libArduCam.ArduCam_writeUserData
+    ardu_writeUserData.argtypes = [c_ulonglong, c_uint16, c_uint8, POINTER(c_uint8) ]
+    ardu_writeUserData.restype  = c_uint
+    buf = (c_uint8 * u8Len)(*[i for i in data])
+    err_code = ardu_writeUserData(handle, u16Addr, u8Len, buf)
+    return err_code
 
 
     
