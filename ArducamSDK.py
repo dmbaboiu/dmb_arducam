@@ -599,21 +599,33 @@ def Py_ArduCam_setMode(handle, mode):
     C prototype:
       unsigned int ArduCam_setMode(       ArduCamHandle useHandle, int mode);
     """
-    return
+    ardu_setMode = _libArduCam.ArduCam_setMode
+    ardu_setMode.argtypes = [c_ulonglong, c_int]
+    ardu_setMode.restype  = c_uint
+    err_code = ardu_setMode(handle, mode)
+    return err_code
 
 def Py_ArduCam_isFrameReady(handle):
     """
     C prototype:
       unsigned int ArduCam_isFrameReady(  ArduCamHandle useHandle);
     """
-    return
+    ardu_isFrameReady = _libArduCam.ArduCam_isFrameReady
+    ardu_isFrameReady.argtypes = [c_ulonglong,]
+    ardu_isFrameReady.restype  = c_uint
+    err_code = ardu_isFrameReady(handle)
+    return err_code
 
 def Py_ArduCam_softTrigger(handle):
     """
     C prototype:
       unsigned int ArduCam_softTrigger(   ArduCamHandle useHandle);
     """
-    return
+    ardu_softTrigger = _libArduCam.ArduCam_softTrigger
+    ardu_softTrigger.argtypes = [c_ulonglong,]
+    ardu_softTrigger.restype  = c_uint
+    err_code = ardu_softTrigger(handle)
+    return err_code
 
 # Adapted from readImage, based on actual C prototype. The API documentation does not have parameter for the frame
 def Py_ArduCam_getSingleFrame(handle, time_out = 1500):
@@ -621,7 +633,21 @@ def Py_ArduCam_getSingleFrame(handle, time_out = 1500):
     C prototype:
       unsigned int ArduCam_getSingleFrame(ArduCamHandle useHandle, ArduCamOutData* &pstFrameData, int time_out = 1500);
     """
-    return
+    ardu_getSingleFrame= _libArduCam.ArduCam_getSingleFrame
+    ardu_getSingleFrame.argtypes = [c_ulonglong, POINTER(POINTER(ArduCamOutData)), c_int]
+    ardu_getSingleFrame.restype  = c_uint
+    outData = POINTER(ArduCamOutData)()
+    err_code = ardu_getSingleFrame(handle, outData, time_out)
+    if outData:
+        cfg_dict = outData.contents.stImagePara.asdict()
+        cfg_dict['u64Time'] = outData.contents.u64Time
+        # `data` is to be converted to memoryview, for compatibility with standard interface and flexibility
+        pythonapi.PyMemoryView_FromMemory.argtypes = [c_char_p, c_ssize_t, c_int]
+        pythonapi.PyMemoryView_FromMemory.restype = py_object
+        data = pythonapi.PyMemoryView_FromMemory(cast(outData.contents.pu8ImageData, c_char_p), cfg_dict['u32Size'], 0x200)
+        return err_code, data, cfg_dict
+    else:
+        return None, None, None
 
 
 
