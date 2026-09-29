@@ -522,15 +522,36 @@ def Py_ArduCam_setboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize,
     """
     C prototype:
       unsigned int ArduCam_setboardConfig( ArduCamHandle useHandle, Uint8 u8Command, Uint16 u16Value, Uint16 u16Index, Uint32 u32BufSize, Uint8 *pu8Buf );
+    
+    "data" is an array (list) of the remaining elements. It can be empty, for some of the commands.
+    Example call:
+    ArducamSDK.Py_ArduCam_setboardConfig(handle, config.params[0], config.params[1], config.params[2], config.params[3], config.params[4:config.params_length])
+
     """
-    return
+    ardu_setboardConfig = _libArduCam.ArduCam_setboardConfig
+    ardu_setboardConfig.argtypes = [c_ulonglong, c_uint8, c_uint16, c_uint16, c_uint32, POINTER(c_uint8)]
+    ardu_setboardConfig.restype  = c_uint
+    buf = (c_uint8 * u32BufSize)(*data)
+    err_code = ardu_setboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize, buf)
+    return err_code
 
 def Py_ArduCam_getboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize):
     """
     C prototype:
       unsigned int ArduCam_getboardConfig( ArduCamHandle useHandle, Uint8 u8Command, Uint16 u16Value, Uint16 u16Index, Uint32 u32BufSize, Uint8 *pu8Buf );
+    
+    Attempting to read data set with `setBoardConfig()` results in error 0xFF03, VR Command Error.
+    The only call examples provided:
+      err_code = ardu_getboardConfig(handle, 0x80, 0, 0, 10, buf)  // C; buf must be preallocated.
+      ret, data = ArducamSDK.Py_ArduCam_getboardConfig(self.handle, 0x80, 0x00, 0x00, 2)  # Python; data allocated internally and returned
+    Python implementation returns a bytes object, which can be unpacked later.
     """
-    return
+    ardu_getboardConfig = _libArduCam.ArduCam_getboardConfig
+    ardu_getboardConfig.argtypes = [c_ulonglong, c_uint8, c_uint16, c_uint16, c_uint32, POINTER(c_uint8)]
+    ardu_getboardConfig.restype  = c_uint
+    buf = (c_uint8 * u32BufSize)()
+    err_code = ardu_getboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize, buf)
+    return err_code, bytes(buf)
 
 
 
