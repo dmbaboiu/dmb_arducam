@@ -141,6 +141,7 @@ class Control(Structure):
                 ('code',           c_char_p),        # char* -- Python: bytes
                ]
 
+
 ### Functions to access camera, reordered in sections
 
 ## General Functions
@@ -231,6 +232,7 @@ def Py_ArduCam_setCamCfg(handle, cfg):
     return 
 
 
+
 ## Image Capture Functions
 def Py_ArduCam_beginCaptureImage(handle):
     """
@@ -243,6 +245,7 @@ def Py_ArduCam_beginCaptureImage(handle):
     err_code = ardu_beginCapture(handle)
     return err_code
 
+
 def Py_ArduCam_captureImage(handle):
     """
     C prototype:
@@ -253,6 +256,7 @@ def Py_ArduCam_captureImage(handle):
     ardu_Capture.restype  = c_uint
     err_code = ardu_Capture(handle)
     return err_code
+
 
 def Py_ArduCam_endCaptureImage(handle):
     """
@@ -266,6 +270,7 @@ def Py_ArduCam_endCaptureImage(handle):
     return err_code
 
 
+
 ## Image Read Functions
 def Py_ArduCam_availableImage(handle):
     """
@@ -277,6 +282,7 @@ def Py_ArduCam_availableImage(handle):
     ardu_available.restype  = c_uint
     err_code = ardu_available(handle)
     return err_code
+
 
 def Py_ArduCam_readImage(handle):
     """
@@ -317,6 +323,7 @@ def Py_ArduCam_del(handle):
     err_code = ardu_del(handle)
     return err_code
 
+
 def Py_ArduCam_flush(handle):
     """
     C prototype:
@@ -341,6 +348,7 @@ def Py_ArduCam_writeSensorReg(handle, regAddr, val):
     ardu_writeSensorReg.restype  = c_uint
     err_code = ardu_writeSensorReg(handle, regAddr, val)
     return err_code
+
 
 def Py_ArduCam_readSensorReg(handle, regAddr):
     """
@@ -367,7 +375,8 @@ def Py_ArduCam_writeReg_8_8(handle, shipAddr, regAddr, val):
     ardu_writeReg_8_8.restype  = c_uint
     err_code = ardu_writeReg_8_8(handle, shipAddr, regAddr, val)
     return err_code
-    
+
+
 def Py_ArduCam_readReg_8_8(handle, shipAddr, regAddr):
     """
     C prototype:
@@ -379,7 +388,8 @@ def Py_ArduCam_readReg_8_8(handle, shipAddr, regAddr):
     regValue = c_uint32()
     err_code = ardu_readReg_8_8(handle, shipAddr, regAddr, regValue)
     return err_code, regValue.value
-    
+
+
 def Py_ArduCam_writeReg_8_16(handle, shipAddr, regAddr, val):
     """
     C prototype:
@@ -390,6 +400,7 @@ def Py_ArduCam_writeReg_8_16(handle, shipAddr, regAddr, val):
     ardu_writeReg_8_16.restype  = c_uint
     err_code = ardu_writeReg_8_16(handle, shipAddr, regAddr, val)
     return err_code
+
 
 def Py_ArduCam_readReg_8_16(handle, shipAddr, regAddr):
     """
@@ -402,7 +413,7 @@ def Py_ArduCam_readReg_8_16(handle, shipAddr, regAddr):
     regValue = c_uint32()
     err_code = ardu_readReg_8_16(handle, shipAddr, regAddr, regValue)
     return err_code, regValue.value
-    
+
 
 def Py_ArduCam_writeReg_16_8(handle, shipAddr, regAddr, val):
     """
@@ -414,7 +425,8 @@ def Py_ArduCam_writeReg_16_8(handle, shipAddr, regAddr, val):
     ardu_writeReg_16_8.restype  = c_uint
     err_code = ardu_writeReg_16_8(handle, shipAddr, regAddr, val)
     return err_code
-    
+
+
 def Py_ArduCam_readReg_16_8(handle, shipAddr, regAddr):
     """
     C prototype:
@@ -426,7 +438,8 @@ def Py_ArduCam_readReg_16_8(handle, shipAddr, regAddr):
     regValue = c_uint32()
     err_code = ardu_readReg_16_8(handle, shipAddr, regAddr, regValue)
     return err_code, regValue.value
-    
+
+
 def Py_ArduCam_writeReg_16_16(handle, shipAddr, regAddr, val):
     """
     C prototype:
@@ -437,7 +450,8 @@ def Py_ArduCam_writeReg_16_16(handle, shipAddr, regAddr, val):
     ardu_writeReg_16_16.restype  = c_uint
     err_code = ardu_writeReg_16_16(handle, shipAddr, regAddr, val)
     return err_code
-    
+
+
 def Py_ArduCam_readReg_16_16(handle, shipAddr, regAddr):
     """
     C prototype:
@@ -449,7 +463,8 @@ def Py_ArduCam_readReg_16_16(handle, shipAddr, regAddr):
     regValue = c_uint32()
     err_code = ardu_readReg_16_16(handle, shipAddr, regAddr, regValue)
     return err_code, regValue.value
-    
+
+
 def Py_ArduCam_writeReg_16_32(handle, shipAddr, regAddr, val):
     """
     C prototype:
@@ -461,7 +476,8 @@ def Py_ArduCam_writeReg_16_32(handle, shipAddr, regAddr, val):
     ardu_writeReg_16_32.restype  = c_uint
     err_code = ardu_writeReg_16_32(handle, shipAddr, regAddr, val)
     return err_code
-   
+
+
 def Py_ArduCam_readReg_16_32(handle, shipAddr, regAddr):
     """
     C prototype:
@@ -473,6 +489,7 @@ def Py_ArduCam_readReg_16_32(handle, shipAddr, regAddr):
     regValue = c_uint32()
     err_code = ardu_readReg_16_32(handle, shipAddr, regAddr, regValue)
     return err_code, regValue.value
+
 
 
 ## ??? Not in SDK API description. 
@@ -494,6 +511,7 @@ def ArduCam_setForceOutput(handle, value):
     ardu_setForceOutput(handle, value)
     return
 
+
 def Py_ArduCam_enableForceRead(handle):
     """
     C prototype:
@@ -505,6 +523,7 @@ def Py_ArduCam_enableForceRead(handle):
     ardu_enableForceRead(handle, value)
     return
 
+
 def Py_ArduCam_disableForceRead():
     """
     C prototype:
@@ -515,6 +534,7 @@ def Py_ArduCam_disableForceRead():
     ardu_disableForceRead.restype  = None
     ardu_disableForceRead(handle, value)
     return
+
 
 
 ## Configuration Functions
@@ -534,6 +554,7 @@ def Py_ArduCam_setboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize,
     buf = (c_uint8 * u32BufSize)(*data)
     err_code = ardu_setboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize, buf)
     return err_code
+
 
 def Py_ArduCam_getboardConfig(handle, u8Command, u16Value, u16Index, u32BufSize):
     """
@@ -573,6 +594,7 @@ def Py_ArduCam_readUserData(handle, u16Addr, u8Len):
     err_code = ardu_readUserData(handle, u16Addr, u8Len, buf)
     return err_code, bytes(buf)
 
+
 def Py_ArduCam_writeUserData(handle, u16Addr, u8Len, data ):
     """
     C prototype:
@@ -591,7 +613,7 @@ def Py_ArduCam_writeUserData(handle, u16Addr, u8Len, data ):
     return err_code
 
 
-    
+
 ## External Trigger functions
 #  NOT TESTED, MY SETUP DOES NOT SUPPORT IT
 def Py_ArduCam_setMode(handle, mode):
@@ -605,6 +627,7 @@ def Py_ArduCam_setMode(handle, mode):
     err_code = ardu_setMode(handle, mode)
     return err_code
 
+
 def Py_ArduCam_isFrameReady(handle):
     """
     C prototype:
@@ -616,6 +639,7 @@ def Py_ArduCam_isFrameReady(handle):
     err_code = ardu_isFrameReady(handle)
     return err_code
 
+
 def Py_ArduCam_softTrigger(handle):
     """
     C prototype:
@@ -626,6 +650,7 @@ def Py_ArduCam_softTrigger(handle):
     ardu_softTrigger.restype  = c_uint
     err_code = ardu_softTrigger(handle)
     return err_code
+
 
 # Adapted from readImage, based on actual C prototype. The API documentation does not have parameter for the frame
 def Py_ArduCam_getSingleFrame(handle, time_out = 1500):
@@ -666,6 +691,4 @@ def Py_ArduCam_setCtrl(handle, func_name, val):
       int ArduCam_setCtrl(ArduCamHandle useHandle, const char *func_name, Int64 val);
     """
     return
-
-
 
