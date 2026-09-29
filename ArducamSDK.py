@@ -336,14 +336,24 @@ def Py_ArduCam_writeSensorReg(handle, regAddr, val):
     C prototype:
       unsigned int ArduCam_writeSensorReg( ArduCamHandle useHandle, Uint32 regAddr,  Uint32 val );
     """
-    return
+    ardu_writeSensorReg = _libArduCam.ArduCam_writeSensorReg
+    ardu_writeSensorReg.argtypes = [c_ulonglong, c_uint32, c_uint32]
+    ardu_writeSensorReg.restype  = c_uint
+    err_code = ardu_writeSensorReg(handle, regAddr, val)
+    return err_code
 
 def Py_ArduCam_readSensorReg(handle, regAddr):
     """
     C prototype:
       unsigned int ArduCam_readSensorReg( ArduCamHandle useHandle, Uint32 regAddr,  Uint32* pval );
     """
-    return
+    ardu_readSensorReg = _libArduCam.ArduCam_readSensorReg
+    ardu_readSensorReg.argtypes = [c_ulonglong, c_uint32, POINTER(c_uint32)]
+    ardu_readSensorReg.restype  = c_uint
+    regValue = c_uint32()
+    err_code = ardu_readSensorReg(handle, regAddr, regValue)
+    # err_code = ardu_readSensorReg(handle, regAddr, byref(regValue))
+    return err_code, regValue.value
 
 # TODO: Check these functions with examples
 def Py_ArduCam_writeReg_8_8(handle, shipAddr, regAddr, val):
