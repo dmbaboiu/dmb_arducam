@@ -237,21 +237,33 @@ def Py_ArduCam_beginCaptureImage(handle):
     C prototype:
       unsigned int ArduCam_beginCaptureImage(ArduCamHandle useHandle);
     """
-    return
+    ardu_beginCapture = _libArduCam.ArduCam_beginCaptureImage
+    ardu_beginCapture.argtypes = [c_ulonglong]
+    ardu_beginCapture.restype  = c_uint
+    err_code = ardu_beginCapture(handle)
+    return err_code
 
 def Py_ArduCam_captureImage(handle):
     """
     C prototype:
       unsigned int ArduCam_captureImage(ArduCamHandle useHandle);
     """
-    return
+    ardu_Capture = _libArduCam.ArduCam_captureImage
+    ardu_Capture.argtypes = [c_ulonglong]
+    ardu_Capture.restype  = c_uint
+    err_code = ardu_Capture(handle)
+    return err_code
 
 def Py_ArduCam_endCaptureImage(handle):
     """
     C prototype:
       unsigned int ArduCam_endCaptureImage(ArduCamHandle useHandle);
     """
-    return
+    ardu_endCapture = _libArduCam.ArduCam_endCaptureImage
+    ardu_endCapture.argtypes = [c_ulonglong]
+    ardu_endCapture.restype  = c_uint
+    err_code = ardu_endCapture(handle)
+    return err_code
 
 
 ## Image Read Functions
