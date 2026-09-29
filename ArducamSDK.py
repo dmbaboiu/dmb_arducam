@@ -174,14 +174,27 @@ def Py_ArduCam_autoopen(cfg):
     C prototype:
       unsigned int ArduCam_autoopen(ArduCamHandle &useHandle, ArduCamCfg *useCfg );
     """
-    return
+    ardu_autoopen = _libArduCam.ArduCam_autoopen
+    ardu_autoopen.argtypes = [POINTER(c_ulonglong), POINTER(ArduCamCfg)]
+    ardu_autoopen.restype  = c_uint
+    handle = c_ulonglong()
+    camcfg = ArduCamCfg(cfg)
+    err_code = ardu_autoopen(handle, camcfg)
+    return err_code, handle, camcfg.asdict()
+
 
 def Py_ArduCam_open(cfg, index=0):
     """
     C prototype:
       unsigned int ArduCam_open(ArduCamHandle &useHandle, ArduCamCfg* useCfg, Uint32 usbIdx );
     """
-    return
+    ardu_open = _libArduCam.ArduCam_open
+    ardu_open.argtypes = [POINTER(c_ulonglong), POINTER(ArduCamCfg), c_uint32]
+    ardu_open.restype  = c_uint
+    handle = c_ulonglong()
+    camcfg = ArduCamCfg(cfg)
+    err_code = ardu_open(handle, camcfg, index)
+    return err_code, handle, camcfg.asdict()
 
 
 def Py_ArduCam_close(handle):
@@ -189,7 +202,11 @@ def Py_ArduCam_close(handle):
     C prototype:
       unsigned int ArduCam_close(ArduCamHandle useHandle);
     """
-    return
+    ardu_close = _libArduCam.ArduCam_close
+    ardu_close.argtypes = [c_ulonglong]
+    ardu_close.restype  = c_uint
+    err_code = ardu_close(handle)
+    return err_code
 
 
 def Py_ArduCam_getSensorCfg(handle):
@@ -197,7 +214,12 @@ def Py_ArduCam_getSensorCfg(handle):
     C prototype:
       unsigned int ArduCam_getSensorCfg(ArduCamHandle useHandle, ArduCamCfg* useCfg );
     """
-    return
+    ardu_getSensorCfg = _libArduCam.ArduCam_getSensorCfg
+    ardu_getSensorCfg.argtypes = [c_ulonglong, POINTER(ArduCamCfg)]
+    ardu_getSensorCfg.restype  = c_uint
+    camcfg = ArduCamCfg()
+    err_code = ardu_getSensorCfg(handle, camcfg)
+    return err_code, camcfg.asdict()
 
 
 def Py_ArduCam_setCamCfg(handle, cfg):
