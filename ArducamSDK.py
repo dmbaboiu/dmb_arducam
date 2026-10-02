@@ -2,6 +2,7 @@ from ctypes import *
 import sys, os, time
 import platform
 import enum
+import arducam_config_parser
 
 try:
     abs_path = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,6 @@ except Exception as e:
     print(e)
     sys.exit(0)
 
-print("Loading custom ArducamSDK")
 RAW_RG                                 = 0
 RAW_GR                                 = 1
 RAW_GB                                 = 2
@@ -692,3 +692,51 @@ def Py_ArduCam_setCtrl(handle, func_name, val):
     """
     return
 
+def initCameraFromFile(configName, index=None):
+    """
+    Unified implementation for opening/configuring camera.
+    """
+    config = arducam_config_parser.LoadConfigFile(str(configName))
+    camera_parameter = config.camera_param.getdict()
+
+    # Need both bitWidth and byteLength passed to the camera, even though byteLength can,be found from bitWidth
+    #    bitWidth tells the sensor how manu steps to use for sampling data, usually 8/10/12 bits
+    #    byteLength tells how the data is packed for transmission
+    bitWidth = camera_parameter["BIT_WIDTH"]
+    byteLength = 2 if bitWidth > 8 else 1  # no cameras have more than 16 bits per pixel
+    cfg = { "u32CameraType":0x00,
+            "usbType":0,
+            "u16Vid":0,
+            "u32Size":0,
+            "u32Width":camera_parameter["WIDTH"],
+            "u32Height":camera_parameter["HEIGHT"],
+            "u8PixelBytes":byteLength,
+            "u8PixelBits":bitWidth,
+            "u32I2cAddr":camera_parameter["I2C_ADDR"],
+            "emI2cMode":camera_parameter["I2C_MODE"],
+            "emImageFmtMode":camera_parameter["FORMAT"][0],
+            "u32TransLvl":camera_parameter["TRANS_LVL"] }
+
+    if index is None:
+        err_code, handle, retcfg = Py_ArduCam_autoopen(cfg)
+    else:
+        err_code, handle, retcfg = Py_ArduCam_open(cfg, index)
+
+    # Load everything from config (loaded from file via ArducamConfigPrser) to camera. Relevant:
+    # config.configs_length -- the number of entries in configs
+    # config.configs -- the actual entries to be populated in the camera registries; C-like array
+    
+    for i in range(config.configs_length):
+        curr_cfg = config.configs[i]
+        cfgType = curr_cfg.type
+        if ((cfgType>>16) & 0xff) and ((cfgType>>16) & 0xff) != retcfg['usbType']:
+            continue
+        # Check and set register values
+        if cfgType & 0xffff == arducam_config_parser.CONFIG_TYPE_REG:
+            err = Py_ArduCam_writeSensorReg(handle, curr_cfg.params[0], curr_cfg.params[1])
+        if cfgType & 0xffff == arducam_config_parser.CONFIG_TYPE_DELAY:
+            time.sleep( curr_cfg.params[0]/1000)
+        if cfgType & 0xffff == arducam_config_parser.CONFIG_TYPE_VRCMD:
+            err = Py_ArduCam_setboardConfig(handle, curr_cfg.params[0], curr_cfg.params[1], curr_cfg.params[2],
+                                            curr_cfg.params[3], curr_cfg.params[4:4+curr_cfg.params[3]])
+    return handle
