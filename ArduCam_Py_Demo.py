@@ -6,15 +6,14 @@ import arducam_config_parser
 import ArducamSDK
 
 
-global handle, running, save_flag, color_mode, save_raw
+global running, save_flag, color_mode, save_raw
 running = True
 save_flag = False
 save_raw = False
-handle = {}
 
 
 def camera_initFromFile(fileName):
-    global handle,color_mode,save_raw
+    global color_mode, save_raw
     config = arducam_config_parser.LoadConfigFile(fileName)
     camera_parameter = config.camera_param.getdict()
     color_mode = camera_parameter["FORMAT"][1]
@@ -65,14 +64,14 @@ def camera_initFromFile(fileName):
                                                     datas[4],datas[5],datas[6],datas[7],
                                                     datas[8],datas[9],datas[10],datas[11]))
 
-        return True
+        return handle
     else:
         print("open fail,rtn_val = ",ret)
-        return False
+        return None
 
        
-def captureImage_thread():
-    global handle,running
+def captureImage_thread(handle):
+    global running
 
     rtn_val = ArducamSDK.Py_ArduCam_beginCaptureImage(handle)
     if rtn_val != 0:
@@ -94,8 +93,8 @@ def captureImage_thread():
     ArducamSDK.Py_ArduCam_endCaptureImage(handle)
 
 
-def readImage_thread():
-    global handle, running, save_flag, color_mode, save_raw
+def readImage_thread(handle):
+    global running, save_flag, color_mode, save_raw
     global COLOR_BayerGB2BGR,COLOR_BayerRG2BGR,COLOR_BayerGR2BGR,COLOR_BayerBG2BGR
     count = 0
     totalFrame = 0
@@ -150,7 +149,7 @@ def showHelp():
 
 
 def sigint_handler(signum, frame):
-    global running,handle
+    global running
     running = False
     exit()
 
@@ -172,10 +171,10 @@ if __name__ == "__main__":
         showHelp()
         exit()
 
-    if camera_initFromFile(config_file_name):
-        ArducamSDK.Py_ArduCam_setMode(handle,ArducamSDK.CONTINUOUS_MODE)
-        ct = threading.Thread(target=captureImage_thread)
-        rt = threading.Thread(target=readImage_thread)
+    if handle := camera_initFromFile(config_file_name):
+        ArducamSDK.Py_ArduCam_setMode(handle, ArducamSDK.CONTINUOUS_MODE)
+        ct = threading.Thread(target=captureImage_thread, args=(handle,))
+        rt = threading.Thread(target=readImage_thread,    args=(handle,))
         ct.start()
         rt.start()
 
