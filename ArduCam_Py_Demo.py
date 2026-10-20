@@ -1,72 +1,41 @@
-import sys
-import os
-import time
-import cv2
-import threading
-import numpy as np
-import signal
-import json
+import sys, os, time
+import threading, signal
+import cv2, numpy as np
 from ImageConvert import *
 import arducam_config_parser
 import ArducamSDK
 
 
-global cfg,handle,running,Width,Heigth,save_flag,color_mode,save_raw
+global handle, running, save_flag, color_mode, save_raw
 running = True
 save_flag = False
 save_raw = False
-cfg = {}
 handle = {}
-
-def configBoard(config):
-    global handle
-    ArducamSDK.Py_ArduCam_setboardConfig(handle, config.params[0], \
-        config.params[1], config.params[2], config.params[3], \
-            config.params[4:config.params_length])
-
-pass
-
-
 
 
 def camera_initFromFile(fileName):
-    global cfg,handle,Width,Height,color_mode,save_raw
-    #load config file
-    # config = json.load(open(fialeName,"r"))
+    global handle,color_mode,save_raw
     config = arducam_config_parser.LoadConfigFile(fileName)
-
     camera_parameter = config.camera_param.getdict()
-    Width = camera_parameter["WIDTH"]
-    Height = camera_parameter["HEIGHT"]
+    color_mode = camera_parameter["FORMAT"][1]
+    print("color mode", color_mode)
 
     BitWidth = camera_parameter["BIT_WIDTH"]
-    ByteLength = 1
-    if BitWidth > 8 and BitWidth <= 16:
-        ByteLength = 2
-        save_raw = True
-    FmtMode = camera_parameter["FORMAT"][0]
-    color_mode = camera_parameter["FORMAT"][1]
-    print("color mode",color_mode)
+    cfg = {"u32CameraType":   0x00,
+            "u32Width":       camera_parameter["WIDTH"],
+            "u32Height":      camera_parameter["HEIGHT"],
+            "usbType":        0,
+            "u8PixelBytes":   2 if BitWidth > 8 and BitWidth <= 16 else 1,
+            "u16Vid":         0,
+            "u32Size":        0,
+            "u8PixelBits":    BitWidth,
+            "u32I2cAddr":     camera_parameter["I2C_ADDR"],
+            "emI2cMode":      camera_parameter["I2C_MODE"],
+            "emImageFmtMode": camera_parameter["FORMAT"][0],
+            "u32TransLvl":    camera_parameter["TRANS_LVL"] }
 
-    I2CMode = camera_parameter["I2C_MODE"]
-    I2cAddr = camera_parameter["I2C_ADDR"]
-    TransLvl = camera_parameter["TRANS_LVL"]
-    cfg = {"u32CameraType":0x00,
-            "u32Width":Width,"u32Height":Height,
-            "usbType":0,
-            "u8PixelBytes":ByteLength,
-            "u16Vid":0,
-            "u32Size":0,
-            "u8PixelBits":BitWidth,
-            "u32I2cAddr":I2cAddr,
-            "emI2cMode":I2CMode,
-            "emImageFmtMode":FmtMode,
-            "u32TransLvl":TransLvl }
-
-    #ret,handle,rtn_cfg = ArducamSDK.Py_ArduCam_open(cfg,0)
-    ret,handle,rtn_cfg = ArducamSDK.Py_ArduCam_autoopen(cfg)
+    ret, handle, rtn_cfg = ArducamSDK.Py_ArduCam_autoopen(cfg)
     if ret == 0:
-
         #ArducamSDK.Py_ArduCam_writeReg_8_8(handle,0x46,3,0x00)
         usb_version = rtn_cfg['usbType']
         configs = config.configs
@@ -80,7 +49,9 @@ def camera_initFromFile(fileName):
             elif type & 0xFFFF == arducam_config_parser.CONFIG_TYPE_DELAY:
                 time.sleep(float(configs[i].params[0])/1000)
             elif type & 0xFFFF == arducam_config_parser.CONFIG_TYPE_VRCMD:
-                configBoard(configs[i])
+                ArducamSDK.Py_ArduCam_setboardConfig(handle, configs[i].params[0],
+                                                     configs[i].params[1], configs[i].params[2], configs[i].params[3],
+                                                     configs[i].params[4:configs[i].params_length])
 
         ArducamSDK.Py_ArduCam_registerCtrls(handle, config.controls, config.controls_length)
         # ArducamSDK.Py_ArduCam_setCtrl(handle, "setFramerate", 5)
@@ -98,7 +69,7 @@ def camera_initFromFile(fileName):
     else:
         print("open fail,rtn_val = ",ret)
         return False
-pass
+
        
 def captureImage_thread():
     global handle,running
@@ -122,8 +93,9 @@ def captureImage_thread():
     running = False
     ArducamSDK.Py_ArduCam_endCaptureImage(handle)
 
+
 def readImage_thread():
-    global handle,running,Width,Height,save_flag,cfg,color_mode,save_raw
+    global handle, running, save_flag, color_mode, save_raw
     global COLOR_BayerGB2BGR,COLOR_BayerRG2BGR,COLOR_BayerGR2BGR,COLOR_BayerBG2BGR
     count = 0
     totalFrame = 0
@@ -166,20 +138,22 @@ def readImage_thread():
             #print("------------------------display time:",(time.time() - display_time))
         else:
             time.sleep(0.001)
-        
+
+
 def showHelp():
-    print(" usage: sudo python ArduCam_Py_Demo.py <path/config-file-name>	\
-        \n\n example: sudo python ArduCam_Py_Demo.py ../../../python_config/AR0134_960p_Color.json	\
-        \n\n While the program is running, you can press the following buttons in the terminal:	\
-        \n\n 's' + Enter:Save the image to the images folder.	\
-        \n\n 'c' + Enter:Stop saving images.	\
-        \n\n 'q' + Enter:Stop running the program.	\
-        \n\n")
+    print("  usage: sudo python ArduCam_Py_Demo.py <path/config-file-name>\n"
+          "example: sudo python ArduCam_Py_Demo.py ../../../python_config/AR0134_960p_Color.cfg\n"
+          "While the program is running, you can press the following buttons in the terminal:\n"
+          "    's' + Enter:Save the image to the images folder.\n"
+          "    'c' + Enter:Stop saving images.\n"
+          "    'q' + Enter:Stop running the program.\n\n")
+
 
 def sigint_handler(signum, frame):
     global running,handle
     running = False
     exit()
+
 
 signal.signal(signal.SIGINT, sigint_handler)
 #signal.signal(signal.SIGHUP, sigint_handler)
@@ -224,5 +198,3 @@ if __name__ == "__main__":
             print("device close success!")
         else:
             print("device close fail!")
-
-        #os.system("pause")
