@@ -6,11 +6,7 @@ import arducam_config_parser
 import ArducamSDK
 
 
-global color_mode
-
-
 def camera_initFromFile(fileName):
-    global color_mode
     config = arducam_config_parser.LoadConfigFile(fileName)
     camera_parameter = config.camera_param.getdict()
     color_mode = camera_parameter["FORMAT"][1]
@@ -61,7 +57,7 @@ def camera_initFromFile(fileName):
                                                     datas[4],datas[5],datas[6],datas[7],
                                                     datas[8],datas[9],datas[10],datas[11]))
 
-        return handle
+        return handle, color_mode
     else:
         print("open fail,rtn_val = ",ret)
         return None
@@ -87,8 +83,7 @@ def captureImage_thread(handle, running):
     ArducamSDK.Py_ArduCam_endCaptureImage(handle)
 
 
-def readImage_thread(handle, running, save_flag, save_raw):
-    global color_mode
+def readImage_thread(handle, running, save_flag, save_raw, color_mode):
     count = 0
     totalFrame = 0
     time0 = time.time()
@@ -155,7 +150,8 @@ if __name__ == "__main__":
         showHelp()
         exit()
 
-    if handle := camera_initFromFile(config_file_name):
+    if vals := camera_initFromFile(config_file_name):
+        handle, color_mode = vals
         save_flag = threading.Event()
         save_flag.clear()
         save_raw = threading.Event()
@@ -173,7 +169,7 @@ if __name__ == "__main__":
 
         ArducamSDK.Py_ArduCam_setMode(handle, ArducamSDK.CONTINUOUS_MODE)
         ct = threading.Thread(target=captureImage_thread, args=(handle, running))
-        rt = threading.Thread(target=readImage_thread,    args=(handle, running, save_flag, save_raw))
+        rt = threading.Thread(target=readImage_thread,    args=(handle, running, save_flag, save_raw, color_mode))
         ct.start()
         rt.start()
 
@@ -192,7 +188,6 @@ if __name__ == "__main__":
 
         ct.join()
         rt.join()
-        #pause
         #ArducamSDK.Py_ArduCam_writeReg_8_8(handle,0x46,3,0x40)
         rtn_val = ArducamSDK.Py_ArduCam_close(handle)
         if rtn_val == 0:
