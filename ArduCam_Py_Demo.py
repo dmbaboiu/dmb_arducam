@@ -6,14 +6,11 @@ import arducam_config_parser
 import ArducamSDK
 
 
-global running, save_flag, color_mode, save_raw
-running = True
-save_flag = False
-save_raw = False
+global color_mode
 
 
 def camera_initFromFile(fileName):
-    global color_mode, save_raw
+    global color_mode
     config = arducam_config_parser.LoadConfigFile(fileName)
     camera_parameter = config.camera_param.getdict()
     color_mode = camera_parameter["FORMAT"][1]
@@ -70,18 +67,16 @@ def camera_initFromFile(fileName):
         return None
 
        
-def captureImage_thread(handle):
-    global running
-
+def captureImage_thread(handle, running):
     rtn_val = ArducamSDK.Py_ArduCam_beginCaptureImage(handle)
     if rtn_val != 0:
         print("Error beginning capture, rtn_val = ",rtn_val)
-        running = False
+        running.clear()
         return
     else:
         print("Capture began, rtn_val = ",rtn_val)
     
-    while running:
+    while running.is_set():
         #print "capture"
         rtn_val = ArducamSDK.Py_ArduCam_captureImage(handle)
         if rtn_val > 255:
@@ -89,13 +84,11 @@ def captureImage_thread(handle):
             if rtn_val == ArducamSDK.USB_CAMERA_USB_TASK_ERROR:
                 break
 
-    running = False
     ArducamSDK.Py_ArduCam_endCaptureImage(handle)
 
 
-def readImage_thread(handle):
-    global running, save_flag, color_mode, save_raw
-    global COLOR_BayerGB2BGR,COLOR_BayerRG2BGR,COLOR_BayerGR2BGR,COLOR_BayerBG2BGR
+def readImage_thread(handle, running, save_flag, save_raw):
+    global color_mode
     count = 0
     totalFrame = 0
     time0 = time.time()
@@ -104,7 +97,7 @@ def readImage_thread(handle):
     cv2.namedWindow("ArduCam Demo",1)
     if not os.path.exists("images"):
         os.makedirs("images")
-    while running:
+    while running.is_set():
         display_time = time.time()
         if ArducamSDK.Py_ArduCam_availableImage(handle) > 0:		
             rtn_val,data,rtn_cfg = ArducamSDK.Py_ArduCam_readImage(handle)
@@ -122,11 +115,11 @@ def readImage_thread(handle):
                 count = 0
                 time0 = time1
             count += 1
-            if save_flag:
+            if save_flag.is_set():
                 cv2.imwrite("images/image%d.jpg"%totalFrame,image)
-                if save_raw:
-                    with open("images/image%d.raw"%totalFrame, 'wb') as f:
-                        f.write(data)
+            if save_raw.is_set():
+                with open("images/image%d.raw"%totalFrame, 'wb') as f:
+                    f.write(data)
                 totalFrame += 1
 
             image = cv2.resize(image,(640,480),interpolation = cv2.INTER_LINEAR)
@@ -143,20 +136,11 @@ def showHelp():
     print("  usage: sudo python ArduCam_Py_Demo.py <path/config-file-name>\n"
           "example: sudo python ArduCam_Py_Demo.py ../../../python_config/AR0134_960p_Color.cfg\n"
           "While the program is running, you can press the following buttons in the terminal:\n"
-          "    's' + Enter:Save the image to the images folder.\n"
-          "    'c' + Enter:Stop saving images.\n"
-          "    'q' + Enter:Stop running the program.\n\n")
+          "    's' + Enter: Save the image to the images folder.\n"
+          "    'r' + Enter: Save the raw image data to the images folder.\n"
+          "    'c' + Enter: Stop saving images.\n"
+          "    'q' + Enter: Stop running the program.\n\n")
 
-
-def sigint_handler(signum, frame):
-    global running
-    running = False
-    exit()
-
-
-signal.signal(signal.SIGINT, sigint_handler)
-#signal.signal(signal.SIGHUP, sigint_handler)
-signal.signal(signal.SIGTERM, sigint_handler)
 
 if __name__ == "__main__":
 
@@ -172,21 +156,39 @@ if __name__ == "__main__":
         exit()
 
     if handle := camera_initFromFile(config_file_name):
+        save_flag = threading.Event()
+        save_flag.clear()
+        save_raw = threading.Event()
+        save_raw.clear()
+        running= threading.Event()
+        running.set()
+
+        def sigint_handler(signum, frame):
+            running.clear()
+            exit()
+        signal.signal(signal.SIGINT, sigint_handler)   #
+        # signal.signal(signal.SIGHUP, sigint_handler)   # Unix only
+        signal.signal(signal.SIGTERM, sigint_handler)  #
+
+
         ArducamSDK.Py_ArduCam_setMode(handle, ArducamSDK.CONTINUOUS_MODE)
-        ct = threading.Thread(target=captureImage_thread, args=(handle,))
-        rt = threading.Thread(target=readImage_thread,    args=(handle,))
+        ct = threading.Thread(target=captureImage_thread, args=(handle, running))
+        rt = threading.Thread(target=readImage_thread,    args=(handle, running, save_flag, save_raw))
         ct.start()
         rt.start()
 
-        while running:
+        while running.is_set():
             input_kb = str(sys.stdin.readline()).strip("\n")
 
             if input_kb == 'q' or input_kb == 'Q':
-                running = False
+                running.clear()
             if input_kb == 's' or input_kb == 'S':
-                save_flag = True
+                save_flag.set()
+            if input_kb == 's' or input_kb == 'S':
+                save_raw.set()
             if input_kb == 'c' or input_kb == 'C':
-                save_flag = False
+                save_flag.clear()
+                save_raw.clear()
 
         ct.join()
         rt.join()
