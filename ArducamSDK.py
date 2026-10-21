@@ -4,6 +4,8 @@ import platform
 import enum
 import arducam_config_parser
 
+from arducam_config_parser import *
+
 try:
     abs_path = os.path.dirname(os.path.abspath(__file__))
     if platform.system() == "Windows":
@@ -127,18 +129,6 @@ class ArduCamOutData(Structure):
     _fields_ = [('stImagePara',    ArduCamCfg),      # ArduCamCfg
                 ('u64Time',        c_uint64),        # UInt64
                 ('pu8ImageData',   POINTER(c_uint8)),        # Uint8*
-               ]
-
-# Probably not used
-class Control(Structure):
-    _fields_ = [('min',            c_int64),         # int64_t
-                ('max',            c_int64 ),        # int64_t
-                ('step',           c_int32),         # int32_t
-                ('def',            c_int64),         # int64_t
-                ('flags',          c_uint32),        # uint32_t
-                ('name',           c_char * 128),    # char[128]
-                ('func',           c_char * 128),    # char[128]
-                ('code',           c_char_p),        # char* -- Python: bytes
                ]
 
 
@@ -360,7 +350,6 @@ def Py_ArduCam_readSensorReg(handle, regAddr):
     ardu_readSensorReg.restype  = c_uint
     regValue = c_uint32()
     err_code = ardu_readSensorReg(handle, regAddr, regValue)
-    # err_code = ardu_readSensorReg(handle, regAddr, byref(regValue))
     return err_code, regValue.value
 
 
@@ -520,11 +509,11 @@ def Py_ArduCam_enableForceRead(handle):
     ardu_enableForceRead = _libArduCam.ArduCam_enableForceRead
     ardu_enableForceRead.argtypes = [c_ulonglong,]
     ardu_enableForceRead.restype  = None
-    ardu_enableForceRead(handle, value)
+    ardu_enableForceRead(handle)
     return
 
 
-def Py_ArduCam_disableForceRead():
+def Py_ArduCam_disableForceRead(handle):
     """
     C prototype:
       void ArduCam_disableForceRead( ArduCamHandle useHandle );
@@ -532,7 +521,7 @@ def Py_ArduCam_disableForceRead():
     ardu_disableForceRead = _libArduCam.ArduCam_disableForceRead
     ardu_disableForceRead.argtypes = [c_ulonglong,]
     ardu_disableForceRead.restype  = None
-    ardu_disableForceRead(handle, value)
+    ardu_disableForceRead(handle)
     return
 
 
@@ -692,11 +681,13 @@ def Py_ArduCam_setCtrl(handle, func_name, val):
     """
     return
 
+
+
 def initCameraFromFile(configName, index=None):
     """
     Unified implementation for opening/configuring camera.
     """
-    config = arducam_config_parser.LoadConfigFile(str(configName))
+    config = LoadConfigFile(str(configName))
     camera_parameter = config.camera_param.getdict()
 
     # Need both bitWidth and byteLength passed to the camera, even though byteLength can,be found from bitWidth
