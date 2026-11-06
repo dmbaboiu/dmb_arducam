@@ -2,7 +2,6 @@ from ctypes import *
 import sys, os, time
 import platform
 import enum
-import arducam_config_parser
 
 from arducam_config_parser import *
 
@@ -683,6 +682,25 @@ def Py_ArduCam_setCtrl(handle, func_name, val):
 
 
 
+def loadRegisters(handle, camUsbType, configs, configs_length=0):
+    # configs as returned by original parser is a C-stype ctypes array, not a Python list. Can only iterate by index.
+    for i in range(configs_length):
+        curr_cfg = configs[i]
+        cfgType = curr_cfg.type
+        cfgUsbType = (cfgType>>16) & 0xff
+        if cfgUsbType and (cfgUsbType != camUsbType):
+            continue
+        # Check and set register values
+        if cfgType & 0xffff == CONFIG_TYPE_REG:
+            err = Py_ArduCam_writeSensorReg(handle, curr_cfg.params[0], curr_cfg.params[1])
+        if cfgType & 0xffff == CONFIG_TYPE_DELAY:
+            time.sleep( curr_cfg.params[0]/1000)
+        if cfgType & 0xffff == CONFIG_TYPE_VRCMD:
+            err = Py_ArduCam_setboardConfig(handle, curr_cfg.params[0], curr_cfg.params[1], curr_cfg.params[2],
+                                            curr_cfg.params[3], curr_cfg.params[4:4+curr_cfg.params[3]])
+    return
+
+
 def initCameraFromFile(configName, index=None):
     """
     Unified implementation for opening/configuring camera.
@@ -716,18 +734,8 @@ def initCameraFromFile(configName, index=None):
     # Load everything from config (loaded from file via ArducamConfigPrser) to camera. Relevant:
     # config.configs_length -- the number of entries in configs
     # config.configs -- the actual entries to be populated in the camera registries; C-like array
-    
-    for i in range(config.configs_length):
-        curr_cfg = config.configs[i]
-        cfgType = curr_cfg.type
-        if ((cfgType>>16) & 0xff) and ((cfgType>>16) & 0xff) != retcfg['usbType']:
-            continue
-        # Check and set register values
-        if cfgType & 0xffff == arducam_config_parser.CONFIG_TYPE_REG:
-            err = Py_ArduCam_writeSensorReg(handle, curr_cfg.params[0], curr_cfg.params[1])
-        if cfgType & 0xffff == arducam_config_parser.CONFIG_TYPE_DELAY:
-            time.sleep( curr_cfg.params[0]/1000)
-        if cfgType & 0xffff == arducam_config_parser.CONFIG_TYPE_VRCMD:
-            err = Py_ArduCam_setboardConfig(handle, curr_cfg.params[0], curr_cfg.params[1], curr_cfg.params[2],
-                                            curr_cfg.params[3], curr_cfg.params[4:4+curr_cfg.params[3]])
+    loadRegisters(handle, retcfg['usbType'], config.configs, config.configs_length)
+
+    # ArducamSDK.Py_ArduCam_registerCtrls(handle, config.controls, config.controls_length)
+
     return handle
